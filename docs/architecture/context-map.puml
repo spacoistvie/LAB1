@@ -1,0 +1,51 @@
+@startuml Context Map — TradingCore (визуализация context-map.cml)
+title Контекстная карта (Context Map) платформы TradingCore — state = TO_BE
+
+hide stereotype
+skinparam rectangleFontSize 13
+skinparam ArrowFontSize 11
+
+legend top left
+  |= Метка |= Паттерн интеграции |
+  | U / D | Upstream–Downstream (Customer/Supplier) |
+  | SK | Shared Kernel |
+  | PL | Published Language (Kafka event schema) |
+  | OHS | Open Host Service |
+  | ACL | Anti-Corruption Layer |
+endlegend
+
+package "TradingCore (ContextMap TradingPlatformToBe)" {
+  rectangle "API Gateway Context\n(SUPPORTING)" as gateway_ctx
+  rectangle "Order Management Context\n(CORE_DOMAIN)" as order_ctx
+  rectangle "Matching Engine Context\n(CORE_DOMAIN)" as matching_ctx
+  rectangle "Market Data Context\n(SUPPORTING)" as md_ctx
+  rectangle "Accounts and Billing Context\n(GENERIC)" as accounts_ctx
+  rectangle "Risk and Compliance Context\n(GENERIC)" as risk_ctx
+  rectangle "Notification Context\n(GENERIC)" as notify_ctx
+}
+
+package "Supporting / External Systems" {
+  rectangle "Banking Gateway Context\n(SUPPORTING)" as banking_ctx
+  rectangle "External Banking Ledger\n(вендорский сервис, OTHER)" as ledger_ctx
+  rectangle "Legacy Statement System\n(SOAP, OTHER)" as legacy_ctx
+  rectangle "E-mail / SMS Gateway\n(OTHER)" as email_ctx
+}
+
+' --- Отношения из ContextMap (Context Mapper DSL) ---
+order_ctx -[bold]-> matching_ctx : U/D, PL\nPlaceOrder/Cancel (Kafka)\nCustomer-Supplier
+order_ctx -[bold]-> risk_ctx : U/D, PL\nPreTradeValidation (gRPC)
+matching_ctx -[bold]-> md_ctx : U/D, PL, OHS\nTradeExecuted / BookUpdated (Kafka)
+matching_ctx -[bold]-> accounts_ctx : U/D, PL\nTradeExecuted (Kafka)
+accounts_ctx -[bold]-> risk_ctx : U/D, SK\nSharedLedgerSchema
+md_ctx -[bold]-> notify_ctx : U/D, PL\nMarketAlert (Kafka)
+accounts_ctx -[bold]-> banking_ctx : U/D\nTransfer / Statement
+banking_ctx -[bold]-> ledger_ctx : D/U, ACL\nVendor Banking API (HTTPS)
+banking_ctx -[bold]-> legacy_ctx : D/U, ACL\nLegacy Statements (SOAP)
+notify_ctx -[bold]-> email_ctx : D/U, OHS\nNotifyRequested (HTTPS)
+
+note bottom of banking_ctx
+ACL — антикоррупционный слой
+над внешними платёжными API
+end note
+
+@enduml

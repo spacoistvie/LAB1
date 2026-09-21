@@ -1,0 +1,78 @@
+/* Context Map TradingCore — Context Mapper DSL (https://contextmapper.org).
+   Источник истины контекстной карты; PlantUML-вариант —
+   docs/architecture/context-map.puml (rendered: evidence/context-map.png). */
+
+ContextMap TradingPlatformToBe {
+    type = SYSTEM_LANDSCAPE;
+    state = TO_BE;
+
+    contains APIGatewayContext, OrderManagementContext, MatchingEngineContext,
+             MarketDataContext, AccountsAndBillingContext, RiskAndComplianceContext,
+             NotificationContext, BankingGatewayContext, ExternalBankingLedger,
+             LegacyStatementSystem, EmailSmsGateway;
+
+    /* Core domain платформы — торговля и матчинг */
+    BoundedContext OrderManagementContext implements TradingSubdomain {
+        type = CORE_DOMAIN;
+        domainVisionStatement = "Приём, валидация и трекинг приказов клиента; публикует события OrderAccepted/OrderCancelled высокой частоты.";
+    }
+    BoundedContext MatchingEngineContext implements TradingSubdomain {
+        type = CORE_DOMAIN;
+        domainVisionStatement = "Матчинг заявок и ведение инкрементального стакана (Order Book): 100 000 ops/s, t(p99) < 5 ms.";
+    }
+
+    /* ---- Отношения Customer/Supplier + интеграционные паттерны ---- */
+    OrderManagementContext [U,OHS,PL] -> [D] MatchingEngineContext : PlaceOrder / CancelOrder (Kafka, at-least-once);
+    OrderManagementContext [U] -> [D,PL] RiskAndComplianceContext : PreTradeValidation (gRPC sync);
+    MatchingEngineContext [U,PL] -> [D] AccountsAndBillingContext : TradeExecuted (Kafka);
+    MatchingEngineContext [U,OHS,PL] -> [D] MarketDataContext : TradeExecuted / BookUpdated (Kafka);
+    AccountsAndBillingContext [U,SK] -> [D] RiskAndComplianceContext : SharedLedgerSchema (балансы/экспозиция);
+    MarketDataContext [U,PL] -> [D] NotificationContext : MarketAlert (Kafka);
+    AccountsAndBillingContext [U,D] -> [D] BankingGatewayContext : Transfer / Statement;
+    BankingGatewayContext [D,ACL] -> [U] ExternalBankingLedger : Vendor Banking API (HTTPS);
+    BankingGatewayContext [D,ACL] -> [U] LegacyStatementSystem : Legacy Statements (SOAP);
+    NotificationContext [D,OHS] -> [U] EmailSmsGateway : NotifyRequested (HTTPS);
+
+    BoundedContext APIGatewayContext implements TradingSubdomain {
+        type = SUPPORTING_SUBDOMAIN;
+        domainVisionStatement = "Публичные каналы входа: Web/Mobile/API, аутентификация JWT/mTLS, rate limiting, FIX-шлюз для HFT.";
+    }
+    BoundedContext MarketDataContext implements TradingSubdomain {
+        type = SUPPORTING_SUBDOMAIN;
+        domainVisionStatement = "Open Host Service для рыночных данных: трейды, глубина стакана, свечи; история в ClickHouse.";
+    }
+    BoundedContext AccountsAndBillingContext implements AccountSubdomain {
+        type = GENERIC_SUBDOMAIN;
+        domainVisionStatement = "Счета, double-entry ledger, балансы, комиссии, крипто/FIAT расчёты.";
+    }
+    BoundedContext RiskAndComplianceContext implements RiskSubdomain {
+        type = GENERIC_SUBDOMAIN;
+        domainVisionStatement = "Превентивные лимиты, маржинальные правила, экспозиция, KYC/AML политики.";
+    }
+    BoundedContext NotificationContext implements NotificationSubdomain {
+        type = GENERIC_SUBDOMAIN;
+        domainVisionStatement = "Мультиканальная доставка нотификаций: e-mail, SMS, push, мессенджеры.";
+    }
+    BoundedContext BankingGatewayContext implements AccountSubdomain {
+        type = SUPPORTING_SUBDOMAIN;
+        domainVisionStatement = "Адаптация внешних платёжных сервисов к внутреннему протоколу платформы (ACL).";
+    }
+    BoundedContext ExternalBankingLedger implements AccountSubdomain {
+        type = OTHER_SUBDOMAIN;
+        domainVisionStatement = "Внешний вендорский банковский сервис ввода/вывода FIAT.";
+    }
+    BoundedContext LegacyStatementSystem implements AccountSubdomain {
+        type = OTHER_SUBDOMAIN;
+        domainVisionStatement = "Устаревшая система выписок по счетам (SOAP).";
+    }
+    BoundedContext EmailSmsGateway implements NotificationSubdomain {
+        type = OTHER_SUBDOMAIN;
+        domainVisionStatement = "Внешние e-mail/SMS провайдеры.";
+    }
+
+    /* ---- Поддомены ---- */
+    Subdomain TradingSubdomain { type = CORE_DOMAIN; entities = [Order, LimitOrder, MarketOrder, OrderBook, PriceLevel, Trade, Fill]; }
+    Subdomain AccountSubdomain { type = GENERIC_SUBDOMAIN; entities = [Account, BalanceEntry, FeePolicy]; }
+    Subdomain RiskSubdomain { type = GENERIC_SUBDOMAIN; entities = [ExposureProfile, ComplianceRule]; }
+    Subdomain NotificationSubdomain { type = GENERIC_SUBDOMAIN; entities = [NotificationEvent, Channel]; }
+}

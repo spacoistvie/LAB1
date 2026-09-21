@@ -1,0 +1,29 @@
+@startuml C4 System Context — Crypto Trading Platform (TradingCore)
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title C4 L1 — System Context Diagram: Торговая платформа «TradingCore» (Тема 2 — Финансовая биржа / криптоплатформа)
+
+Person(retail_trader, "Розничный трейдер", "Размещает лимитные и рыночные заявки, следит за позициями и балансами")
+Person(market_maker, "Маркет-мейкер (HFT)", "Алгоритмическая ликвидность: поток заявок и отмен до 50 000 rps, подключение Fix/Gateway")
+Person(admin, "Комплаенс-администратор", "Настраивает лимиты риска, счета и правила KYC/AML")
+Person(developer, "Разработчик API", "Интегрирует SDK/API платформы во внешние приложения")
+
+System(tradingcore, "TradingCore — криптотрейдинговая платформа", "Приём и матчинг заявок, ведение стакана (Order Book), рыночные данные, счета и расчёты, риск-контроль, нотификации")
+
+System_Ext(banking, "Banking / FIAT Gateway", "Хостинг-окружение: выставление счетов, FIAT-ввод/вывод, банковские расчёты")
+System_Ext(email_sms, "E-mail / SMS Gateway", "Push-канал для клиентских оповещений и брендинг письма")
+System_Ext(whatsapp, "WhatsApp Business API", "Внешний мессенджер для доставки нотификаций")
+System_Ext(old_query, "Legacy Statement System", "Устаревшая система выписок по счетам, интеграция через ACL")
+
+Rel(retail_trader, tradingcore, "Размещает заявки и торговые приказы через Web/Mobile (HTTPS/REST)", "HTTPS/REST")
+Rel(market_maker, tradingcore, "Поток заявок и отмен, подписка на стакан и трейды", "FIX / gRPC")
+Rel(admin, tradingcore, "Управляет лимитами риска, счетами, правилами комплаенса", "HTTPS/REST")
+Rel(developer, tradingcore, "Использует публичный Trading API", "HTTPS/REST")
+Rel(tradingcore, banking, "Реквизиты, выписки и статусы переводов", "gRPC / Kafka")
+Rel(tradingcore, email_sms, "Доставка e-mail/SMS-оповещений", "HTTPS")
+Rel(tradingcore, whatsapp, "Доставка мессенджер-оповещений", "HTTPS")
+Rel(tradingcore, old_query, "Запрос исторических выписок (антикоррупционный слой)", "ACL / HTTPS")
+
+@enduml

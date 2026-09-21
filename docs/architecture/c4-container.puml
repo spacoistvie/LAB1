@@ -1,0 +1,60 @@
+@startuml C4 Container — Crypto Trading Platform (TradingCore)
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title C4 L2 — Container Diagram: микросервисная архитектура TradingCore (Database-per-Service, Kafka, gRPC)
+
+Person(retail_trader, "Трейдер", "Клиент платформы")
+Person(market_maker, "Маркет-мейкер", "HFT-подключение")
+
+System_Boundary(tradingcore, "TradingCore") {
+
+  Container(web, "Web Trading Terminal", "React SPA", "Терминал трейдера: стакан, заявки, портфель")
+  Container(mobile, "Mobile App", "Kotlin/Swift", "Мобильный торговый интерфейс")
+  Container(gateway, "API Gateway", "Kong (HTTPS)", "Аутентификация (JWT/mTLS), rate limiting, маршрутизация")
+
+  Container(order_mgmt, "Order Management Service", "Java 21 / Spring Boot", "Валидация заявок, статусы, клиентские приказы", "PostgreSQL (orders db)")
+  Container(matching, "Matching Engine", "Rust / tokio", "Матчинг заявок, инкрементальный стакан (Order Book), аудит-лог", "Apache Cassandra (audit)")
+  Container(market_data, "Market Data Service", "Go", "Публикация трейдов, глубины стакана, свечи", "ClickHouse (history)")
+  Container(accounts, "Accounts & Billing Service", "Java 21 / Spring Boot", "Счета, балансы, ledger-записи, комиссии", "PostgreSQL (ledger db)")
+  Container(risk, "Risk & Compliance Service", "Kotlin", "Превентивные лимиты, маржа, KYC/AML-правила", "PostgreSQL (risk db)")
+  Container(notifications, "Notification Service", "Node.js", "E-mail, SMS, push и мессенджеры", "PostgreSQL (notify db)")
+
+  ContainerDb(orders_db, "Order DB", "PostgreSQL", "Заявки, приказы, статусы")
+  ContainerDb(audit_db, "Matching Audit Store", "Apache Cassandra", "Журнал матчинга и полный снапшот стакана")
+  ContainerDb(md_db, "Market History", "ClickHouse", "История трейдов и свечи")
+  ContainerDb(ledger_db, "Ledger DB", "PostgreSQL", "Двойной ledger балансов")
+  ContainerDb(risk_db, "Risk DB", "PostgreSQL", "Правила лимитов и профили риска")
+  ContainerDb(notify_db, "Notification DB", "PostgreSQL", "История нотификаций")
+}
+
+ContainerQueue(kafka, "Kafka Event Backbone", "Apache Kafka", "OrderAccepted, TradeExecuted, BalanceChanged, RiskBreached, NotifyRequested")
+
+Rel(retail_trader, web, "Торговля и мониторинг", "HTTPS/WSS")
+Rel(retail_trader, mobile, "Торговля с телефона", "HTTPS/WSS")
+Rel(market_maker, gateway, "FIX-подключение (50k rps)", "FIX / gRPC")
+Rel(web, gateway, "REST/WSS", "HTTPS")
+Rel(mobile, gateway, "REST/WSS", "HTTPS")
+Rel(gateway, order_mgmt, "Роутинг приказов", "HTTPS/REST")
+Rel(gateway, market_data, "Подписка на стакан/трейды", "WebSocket")
+
+Rel(order_mgmt, kafka, "OrderAccepted / OrderCancelled", "Kafka (at-least-once)")
+Rel(kafka, matching, "Поток заявок на матчинг", "Kafka (idempotent consumer)")
+Rel(matching, kafka, "TradeExecuted / BookUpdated", "Kafka")
+Rel(kafka, market_data, "Трейды и обновления стакана", "Kafka")
+Rel(kafka, accounts, "Расчёты балансов по сделкам", "Kafka")
+Rel(kafka, risk, "События лимитов и экспозиции", "Kafka")
+Rel(kafka, notifications, "События для оповещений", "Kafka")
+Rel(accounts, risk, "Проверка лимитов перед списанием", "gRPC (sync)")
+Rel(order_mgmt, risk, "Превентивная проверка заявки", "gRPC (sync)")
+
+Rel(order_mgmt, orders_db, "Читает/пишет", "TCP/Native")
+Rel(matching, audit_db, "Append-only журнал", "CQL")
+Rel(market_data, md_db, "Записывает историю", "Native protocol")
+Rel(accounts, ledger_db, "Ledger-транзакции", "TCP/Native")
+Rel(risk, risk_db, "Читает/пишет", "TCP/Native")
+Rel(notifications, notify_db, "Читает/пишет", "TCP/Native")
+
+SHOW_LEGEND()
+@enduml
