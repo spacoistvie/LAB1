@@ -129,21 +129,10 @@ ledger) и ACL (адаптация внешних платёжных API).
 | [ADR-001](./docs/adr/ADR-001-architecture-as-code.md) | Architecture-as-Code: исходники диаграмм в Git, решения по MADR | accepted |
 | [ADR-002](./docs/adr/ADR-002-service-decomposition.md) | Микросервисы + Database-per-Service + Kafka | accepted |
 
-## 6. Сборка (make build-docs) — Автоматизация
-
-```bash
-make build-docs   # рендерит все .puml -> evidence/*.png, *.svg (PlantUML-сервер)
-make lint         # валидирует синтаксис PlantUML (реальным рендером) и структуру .cml
-```
-
-Локальный вариант для VS Code: расширения **PlantUML** и **Context Mapper**
-(VS Code Marketplace), JVM + PlantUML Graphviz не нужен (Smetana layout).
-
-## 7. Структура репозитория
+## 6. Структура репозитория
 
 ```
 .
-├── Makefile                     # единая точка сборки: make build-docs
 ├── README.md                    # этот файл (сдача: ссылка на репозиторий)
 ├── docs/
 │   ├── adr/                     # архитектурные решения (MADR)
@@ -155,13 +144,9 @@ make lint         # валидирует синтаксис PlantUML (реаль
 │       ├── c4-container.puml
 │       ├── context-map.puml
 │       └── context-map.cml          # Context Mapper DSL
-├── evidence/                    # PNG/SVG рендеры (доказательства сборки)
-└── scripts/
-    ├── build-docs.py            # рендер через PlantUML-сервер
-    └── lint.sh                  # lint PlantUML + CML
+└── evidence/                    # PNG/SVG рендеры (итоговая документация)
 ```
 
-## 8. Проверка (self-verification)
-
-* `make lint` — синтаксис всех диаграмм валиден (рендер = проверка);
-* все рендеры лежат в `evidence/` и встроены в этот README.
+> Диаграммы рендерятся из исходников через PlantUML-сервер; в репозиторий
+> выкладывается только итоговая документация — исходники диаграмм и их
+> рендеры в `evidence/`.
