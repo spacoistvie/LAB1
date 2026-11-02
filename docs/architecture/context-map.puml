@@ -39,9 +39,9 @@ matching_ctx -[bold]-> accounts_ctx : U/D, PL\nTradeExecuted (Kafka)
 accounts_ctx -[bold]-> risk_ctx : U/D, SK\nSharedLedgerSchema
 md_ctx -[bold]-> notify_ctx : U/D, PL\nMarketAlert (Kafka)
 accounts_ctx -[bold]-> banking_ctx : U/D\nTransfer / Statement
-banking_ctx -[bold]-> ledger_ctx : D/U, ACL\nVendor Banking API (HTTPS)
-banking_ctx -[bold]-> legacy_ctx : D/U, ACL\nLegacy Statements (SOAP)
-notify_ctx -[bold]-> email_ctx : D/U, OHS\nNotifyRequested (HTTPS)
+banking_ctx -[bold]-> ledger_ctx : U/D, ACL\nVendor Banking API (HTTPS)
+banking_ctx -[bold]-> legacy_ctx : U/D, ACL\nLegacy Statements (SOAP)
+notify_ctx -[bold]-> email_ctx : U/D, OHS\nNotifyRequested (HTTPS)
 
 note bottom of banking_ctx
 ACL — антикоррупционный слой

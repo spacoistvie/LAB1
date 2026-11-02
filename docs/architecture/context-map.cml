@@ -29,9 +29,9 @@ ContextMap TradingPlatformToBe {
     AccountsAndBillingContext [U,SK] -> [D] RiskAndComplianceContext : SharedLedgerSchema (балансы/экспозиция);
     MarketDataContext [U,PL] -> [D] NotificationContext : MarketAlert (Kafka);
     AccountsAndBillingContext [U,D] -> [D] BankingGatewayContext : Transfer / Statement;
-    BankingGatewayContext [D,ACL] -> [U] ExternalBankingLedger : Vendor Banking API (HTTPS);
-    BankingGatewayContext [D,ACL] -> [U] LegacyStatementSystem : Legacy Statements (SOAP);
-    NotificationContext [D,OHS] -> [U] EmailSmsGateway : NotifyRequested (HTTPS);
+    BankingGatewayContext [U,ACL] -> [D] ExternalBankingLedger : Vendor Banking API (HTTPS);
+    BankingGatewayContext [U,ACL] -> [D] LegacyStatementSystem : Legacy Statements (SOAP);
+    NotificationContext [U,OHS] -> [D] EmailSmsGateway : NotifyRequested (HTTPS);
 
     BoundedContext APIGatewayContext implements TradingSubdomain {
         type = SUPPORTING_SUBDOMAIN;
