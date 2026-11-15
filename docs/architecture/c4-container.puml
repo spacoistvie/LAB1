@@ -14,12 +14,12 @@ System_Boundary(tradingcore, "TradingCore") {
   Container(mobile, "Mobile App", "Kotlin/Swift", "Мобильный торговый интерфейс")
   Container(gateway, "API Gateway", "Kong (HTTPS)", "Аутентификация (JWT/mTLS), rate limiting, маршрутизация")
 
-  Container(order_mgmt, "Order Management Service", "Java 21 / Spring Boot", "Валидация заявок, статусы, клиентские приказы", "PostgreSQL (orders db)")
-  Container(matching, "Matching Engine", "Rust / tokio", "Матчинг заявок, инкрементальный стакан (Order Book), аудит-лог", "Apache Cassandra (audit)")
-  Container(market_data, "Market Data Service", "Go", "Публикация трейдов, глубины стакана, свечи", "ClickHouse (history)")
-  Container(accounts, "Accounts & Billing Service", "Java 21 / Spring Boot", "Счета, балансы, ledger-записи, комиссии", "PostgreSQL (ledger db)")
-  Container(risk, "Risk & Compliance Service", "Kotlin", "Превентивные лимиты, маржа, KYC/AML-правила", "PostgreSQL (risk db)")
-  Container(notifications, "Notification Service", "Node.js", "E-mail, SMS, push и мессенджеры", "PostgreSQL (notify db)")
+  Container(order_mgmt, "Order Management Service", "Java 21 / Spring Boot", "Валидация заявок, статусы, клиентские приказы")
+  Container(matching, "Matching Engine", "Rust / tokio", "Матчинг заявок, инкрементальный стакан (Order Book), аудит-лог")
+  Container(market_data, "Market Data Service", "Go", "Публикация трейдов, глубины стакана, свечи")
+  Container(accounts, "Accounts & Billing Service", "Java 21 / Spring Boot", "Счета, балансы, ledger-записи, комиссии")
+  Container(risk, "Risk & Compliance Service", "Kotlin", "Превентивные лимиты, маржа, KYC/AML-правила")
+  Container(notifications, "Notification Service", "Node.js", "E-mail, SMS, push и мессенджеры")
 
   ContainerDb(orders_db, "Order DB", "PostgreSQL", "Заявки, приказы, статусы")
   ContainerDb(audit_db, "Matching Audit Store", "Apache Cassandra", "Журнал матчинга и полный снапшот стакана")
