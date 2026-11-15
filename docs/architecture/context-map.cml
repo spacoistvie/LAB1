@@ -22,15 +22,18 @@ ContextMap TradingPlatformToBe {
     }
 
     /* ---- Отношения Customer/Supplier + интеграционные паттерны ---- */
+    /* Конвенция CML: стрелка -> идёт от upstream к downstream.
+       Роли upstream: OHS, PL. Роли downstream: ACL, CF.
+       SK — симметричная связь: [SK]<->[SK]. */
     OrderManagementContext [U,OHS,PL] -> [D] MatchingEngineContext : PlaceOrder / CancelOrder (Kafka, at-least-once);
-    OrderManagementContext [U] -> [D,PL] RiskAndComplianceContext : PreTradeValidation (gRPC sync);
+    OrderManagementContext [U,PL] -> [D] RiskAndComplianceContext : OrderAccepted (Kafka) / PreTradeValidation (gRPC sync);
     MatchingEngineContext [U,PL] -> [D] AccountsAndBillingContext : TradeExecuted (Kafka);
     MatchingEngineContext [U,OHS,PL] -> [D] MarketDataContext : TradeExecuted / BookUpdated (Kafka);
-    AccountsAndBillingContext [U,SK] -> [D] RiskAndComplianceContext : SharedLedgerSchema (балансы/экспозиция);
+    AccountsAndBillingContext [SK]<->[SK] RiskAndComplianceContext : SharedLedgerSchema (балансы/экспозиция);
     MarketDataContext [U,PL] -> [D] NotificationContext : MarketAlert (Kafka);
-    AccountsAndBillingContext [U,D] -> [D] BankingGatewayContext : Transfer / Statement;
-    BankingGatewayContext [U,ACL] -> [D] ExternalBankingLedger : Vendor Banking API (HTTPS);
-    BankingGatewayContext [U,ACL] -> [D] LegacyStatementSystem : Legacy Statements (SOAP);
+    AccountsAndBillingContext [D] <- [U] BankingGatewayContext : Transfer / Statement (HTTPS);
+    ExternalBankingLedger [U] -> [D,ACL] BankingGatewayContext : Vendor Banking API (HTTPS);
+    LegacyStatementSystem [U] -> [D,ACL] BankingGatewayContext : Legacy Statements (SOAP);
     NotificationContext [U,OHS] -> [D] EmailSmsGateway : NotifyRequested (HTTPS);
 
     BoundedContext APIGatewayContext implements TradingSubdomain {

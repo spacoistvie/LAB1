@@ -32,20 +32,22 @@ package "Supporting / External Systems" {
 }
 
 ' --- Отношения из ContextMap (Context Mapper DSL) ---
-order_ctx -[bold]-> matching_ctx : U/D, PL\nPlaceOrder/Cancel (Kafka)\nCustomer-Supplier
-order_ctx -[bold]-> risk_ctx : U/D, PL\nPreTradeValidation (gRPC)
-matching_ctx -[bold]-> md_ctx : U/D, PL, OHS\nTradeExecuted / BookUpdated (Kafka)
-matching_ctx -[bold]-> accounts_ctx : U/D, PL\nTradeExecuted (Kafka)
-accounts_ctx -[bold]-> risk_ctx : U/D, SK\nSharedLedgerSchema
-md_ctx -[bold]-> notify_ctx : U/D, PL\nMarketAlert (Kafka)
-accounts_ctx -[bold]-> banking_ctx : U/D\nTransfer / Statement
-banking_ctx -[bold]-> ledger_ctx : U/D, ACL\nVendor Banking API (HTTPS)
-banking_ctx -[bold]-> legacy_ctx : U/D, ACL\nLegacy Statements (SOAP)
-notify_ctx -[bold]-> email_ctx : U/D, OHS\nNotifyRequested (HTTPS)
+' Стрелка идёт от upstream к downstream; ACL — на стороне downstream, SK — симметричная связь.
+order_ctx -[bold]-> matching_ctx : U -> D, OHS/PL\nPlaceOrder/Cancel (Kafka)\nCustomer-Supplier
+order_ctx -[bold]-> risk_ctx : U -> D, PL\nOrderAccepted / PreTradeValidation
+matching_ctx -[bold]-> md_ctx : U -> D, OHS/PL\nTradeExecuted / BookUpdated (Kafka)
+matching_ctx -[bold]-> accounts_ctx : U -> D, PL\nTradeExecuted (Kafka)
+accounts_ctx <-[bold]-> risk_ctx : SK <-> SK\nSharedLedgerSchema
+md_ctx -[bold]-> notify_ctx : U -> D, PL\nMarketAlert (Kafka)
+banking_ctx -[bold]-> accounts_ctx : U -> D\nTransfer / Statement (HTTPS)
+ledger_ctx -[bold]-> banking_ctx : U -> D, ACL\nVendor Banking API (HTTPS)
+legacy_ctx -[bold]-> banking_ctx : U -> D, ACL\nLegacy Statements (SOAP)
+notify_ctx -[bold]-> email_ctx : U -> D, OHS\nNotifyRequested (HTTPS)
 
-note bottom of banking_ctx
-ACL — антикоррупционный слой
-над внешними платёжными API
+note bottom of ledger_ctx
+ACL — на стороне Banking Gateway:
+шлюз потребляет контракт
+внешних систем и защищает модель
 end note
 
 @enduml
