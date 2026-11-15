@@ -103,9 +103,11 @@ e-mail/SMS, мессенджеры, legacy-система выписок с ин
 
 ### 4.2 Context Map (Context Mapper DSL)
 
-Исходная модель СЕ/ContextMapperDSL и её визуализация. Отношения Customer/Supplier,
-Published Language (Kafka), Open Host Service (Market Data), Shared Kernel (схема
-ledger) и ACL (адаптация внешних платёжных API).
+Исходная модель Context Mapper DSL и её визуализация. Отношения Customer/Supplier
+(стрелка CML всегда идёт от upstream к downstream), Published Language (Kafka,
+роли upstream), Open Host Service (Market Data, роль upstream), симметричный
+Shared Kernel (`[SK]<->[SK]`, схема ledger) и ACL на стороне downstream
+(Banking Gateway адаптирует внешние платёжные API).
 
 * Исходник CML: `docs/architecture/context-map.cml`
 * Визуализация: `docs/architecture/context-map.puml` → `evidence/context-map.png`
@@ -134,6 +136,7 @@ ledger) и ACL (адаптация внешних платёжных API).
 ```
 .
 ├── README.md                    # этот файл (сдача: ссылка на репозиторий)
+├── Makefile                     # единая точка сборки (make build-docs / lint / clean)
 ├── docs/
 │   ├── adr/                     # архитектурные решения (MADR)
 │   │   ├── README.md
@@ -144,9 +147,18 @@ ledger) и ACL (адаптация внешних платёжных API).
 │       ├── c4-container.puml
 │       ├── context-map.puml
 │       └── context-map.cml          # Context Mapper DSL
+├── scripts/
+│   ├── build-docs.py            # рендер .puml → evidence/ (PNG + SVG)
+│   └── lint.sh                  # автоматическая валидация синтаксиса
 └── evidence/                    # PNG/SVG рендеры (итоговая документация)
 ```
 
-> Диаграммы рендерятся из исходников через PlantUML-сервер; в репозиторий
-> выкладывается только итоговая документация — исходники диаграмм и их
-> рендеры в `evidence/`.
+> Архитектура как код: диаграммы — исходники (`docs/architecture/`), рендеры —
+> доказательства (`evidence/`). Сборка и валидация воспроизводимы одной командой
+> и работают в любом POSIX-окружении (Linux, macOS, WSL):
+>
+> ```
+> make build-docs   # рендер всех .puml в evidence/ через PlantUML-сервер
+> make lint         # валидация синтаксиса PlantUML (рендером) и CML
+> make clean        # удалить сгенерированные артефакты
+> ```
